@@ -27,6 +27,7 @@ php artisan test
 Set `DB_USERNAME` and `DB_PASSWORD` in `.env` to match your local MySQL account before migrating. Keep `.env` private and do not commit it.
 
 The database seeder creates three example users. Each uses the local-only password `password`; change it before using any account outside development.
+It also seeds example catalog data: 50 books, three copies per book, and their categories, authors, publishers, and shelves.
 
 | Role | Email |
 | --- | --- |
