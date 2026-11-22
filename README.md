@@ -30,6 +30,8 @@ Set `DB_USERNAME` and `DB_PASSWORD` in `.env` to match your local MySQL account 
 The database seeder creates three example users. Each uses the local-only password `password`; change it before using any account outside development.
 It also seeds example catalog data: 50 books, three copies per book, and their categories, authors, publishers, and shelves.
 
+Administrators and librarians can manage members from the admin navigation. Member records receive annual `AGT-YYYY-0001` numbers and a linked `anggota` account automatically; the member detail page includes loan history, accumulated fines, and a printable PDF card with a QR code. Member photos are stored on Laravel's public disk, so run `php artisan storage:link` during setup.
+
 | Role | Email |
 | --- | --- |
 | admin | admin@pustakaku.test |
