@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\CirculationService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
@@ -24,6 +25,7 @@ function configureCirculationSettings(array $overrides = []): void
 
     foreach ($settings as $key => $value) {
         Setting::query()->updateOrCreate(['key' => $key], ['value' => (string) $value]);
+        Cache::forget('pustakuku.settings.'.$key);
     }
 }
 
@@ -273,7 +275,10 @@ it('blocks renewal for late loans, active reservations, and exhausted renewal co
     $member = Member::factory()->create();
 
     $lateCopy = BookCopy::factory()->create(['status' => 'borrowed']);
-    Loan::factory()->for($member)->for($lateCopy)->create(['due_date' => today()->subDay()]);
+    Loan::factory()->for($member)->for($lateCopy)->create([
+        'due_date' => today()->subDay(),
+        'status' => 'overdue',
+    ]);
     expectCirculationFailure(fn () => $service->renewByBarcode($lateCopy->barcode), 'renew_barcode');
 
     $reservedBook = Book::factory()->create();
@@ -305,12 +310,14 @@ it('blocks renewal for late loans, active reservations, and exhausted renewal co
 });
 
 it('rejects missing or invalid rule values instead of using hard-coded defaults', function () {
+    Cache::forget('pustakuku.settings.max_active_loans');
     Setting::query()->where('key', 'max_active_loans')->delete();
 
     expect(fn () => app(CirculationService::class)->memberSummary(Member::factory()->create()->id))
         ->toThrow(LogicException::class);
 
     Setting::query()->create(['key' => 'max_active_loans', 'value' => '-1']);
+    Cache::forget('pustakuku.settings.max_active_loans');
     expect(fn () => app(CirculationService::class)->memberSummary(Member::factory()->create()->id))
         ->toThrow(LogicException::class);
 });

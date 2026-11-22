@@ -34,6 +34,8 @@ Administrators and librarians can manage members from the admin navigation. Memb
 
 Administrators and librarians can process circulation in the **Sirkulasi** page. Its business rules are read from the `settings` table: `loan_duration_days`, `max_active_loans`, `fine_per_day`, and `max_renewals` (initial values: 7 days, 3 books, Rp1,000 per late day, and 1 renewal).
 
+Fines can be filtered, paid, and printed as PDF receipts from **Denda**. Only administrators can change circulation rules from **Pengaturan**; reads are cached and saved values invalidate the cache. Loans past their due date are marked overdue daily by `loans:mark-overdue`, registered in Laravel's scheduler. Configure the system scheduler to run `php artisan schedule:run` every minute.
+
 | Role | Email |
 | --- | --- |
 | admin | admin@pustakaku.test |

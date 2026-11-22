@@ -8,14 +8,14 @@ use App\Models\Fine;
 use App\Models\Loan;
 use App\Models\Member;
 use App\Models\Reservation;
-use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use LogicException;
 
 class CirculationService
 {
+    public function __construct(private readonly LibrarySettingsService $settings) {}
+
     public function searchMembers(string $search): Collection
     {
         $search = trim($search);
@@ -47,10 +47,10 @@ class CirculationService
     {
         $member = Member::query()->findOrFail($memberId);
         $activeLoanCount = $member->loans()
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'overdue'])
             ->whereNull('return_date')
             ->count();
-        $maxActiveLoans = $this->rule('max_active_loans');
+        $maxActiveLoans = $this->settings->getInt('max_active_loans');
         $unpaidFines = Fine::query()
             ->where('status', 'unpaid')
             ->whereHas('loan', fn ($query) => $query->where('member_id', $member->id));
@@ -134,16 +134,16 @@ class CirculationService
             }
 
             $activeLoanCount = $member->loans()
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'overdue'])
                 ->whereNull('return_date')
                 ->count();
-            $maxActiveLoans = $this->rule('max_active_loans');
+            $maxActiveLoans = $this->settings->getInt('max_active_loans');
             if ($activeLoanCount + $copies->count() > $maxActiveLoans) {
                 $this->reject('copies', 'Peminjaman melebihi kuota anggota.');
             }
 
             $today = today();
-            $dueDate = $today->copy()->addDays($this->rule('loan_duration_days'));
+            $dueDate = $today->copy()->addDays($this->settings->getInt('loan_duration_days'));
             $loans = new Collection;
 
             foreach ($copies as $copy) {
@@ -176,7 +176,7 @@ class CirculationService
 
             $loanCandidate = Loan::query()
                 ->where('book_copy_id', $copyCandidate->id)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'overdue'])
                 ->whereNull('return_date')
                 ->latest('id')
                 ->first();
@@ -192,7 +192,7 @@ class CirculationService
 
             $loan = Loan::query()
                 ->where('book_copy_id', $copy->id)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'overdue'])
                 ->whereNull('return_date')
                 ->latest('id')
                 ->lockForUpdate()
@@ -208,7 +208,7 @@ class CirculationService
             $fine = null;
             if ($daysLate > 0) {
                 $fine = $loan->fines()->create([
-                    'amount' => $daysLate * $this->rule('fine_per_day'),
+                    'amount' => $daysLate * $this->settings->getInt('fine_per_day'),
                     'days_late' => $daysLate,
                     'status' => 'unpaid',
                 ]);
@@ -237,7 +237,7 @@ class CirculationService
 
             $loan = Loan::query()
                 ->where('book_copy_id', $copy->id)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'overdue'])
                 ->whereNull('return_date')
                 ->latest('id')
                 ->lockForUpdate()
@@ -246,11 +246,11 @@ class CirculationService
                 $this->reject('renew_barcode', 'Tidak ada peminjaman aktif untuk eksemplar tersebut.');
             }
 
-            if ($loan->extension_count >= $this->rule('max_renewals')) {
+            if ($loan->extension_count >= $this->settings->getInt('max_renewals')) {
                 $this->reject('renew_barcode', 'Batas perpanjangan peminjaman telah tercapai.');
             }
 
-            if ($loan->due_date->lt(today())) {
+            if ($loan->status === 'overdue' || $loan->due_date->lt(today())) {
                 $this->reject('renew_barcode', 'Peminjaman yang sudah terlambat tidak dapat diperpanjang.');
             }
 
@@ -266,7 +266,7 @@ class CirculationService
             }
 
             $loan->update([
-                'due_date' => $loan->due_date->copy()->addDays($this->rule('loan_duration_days')),
+                'due_date' => $loan->due_date->copy()->addDays($this->settings->getInt('loan_duration_days')),
                 'extension_count' => $loan->extension_count + 1,
             ]);
 
@@ -278,7 +278,7 @@ class CirculationService
     {
         return Loan::query()
             ->with(['member', 'bookCopy.book'])
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'overdue'])
             ->whereNull('return_date')
             ->orderBy('due_date')
             ->limit(10)
@@ -302,22 +302,6 @@ class CirculationService
         if ($hasUnpaidFine) {
             $this->reject('member', 'Anggota memiliki denda yang belum lunas.');
         }
-    }
-
-    private function rule(string $key): int
-    {
-        $value = Setting::query()->where('key', $key)->value('value');
-        if (! is_string($value) || ! ctype_digit($value)) {
-            throw new LogicException("Aturan sirkulasi [{$key}] belum diatur dengan nilai bilangan bulat.");
-        }
-
-        $number = (int) $value;
-        $minimum = in_array($key, ['fine_per_day', 'max_renewals'], true) ? 0 : 1;
-        if ($number < $minimum) {
-            throw new LogicException("Aturan sirkulasi [{$key}] berada di luar rentang yang diizinkan.");
-        }
-
-        return $number;
     }
 
     private function reject(string $field, string $message): never

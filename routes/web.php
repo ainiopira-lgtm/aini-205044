@@ -5,9 +5,11 @@ use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookCopyController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CirculationController;
+use App\Http\Controllers\FineController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublisherController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShelfController;
 use App\Models\Book;
 use App\Models\BookCopy;
@@ -52,10 +54,21 @@ Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
         Route::post('circulation/loans', [CirculationController::class, 'checkout'])->name('circulation.loans.store');
         Route::post('circulation/returns', [CirculationController::class, 'returnCopy'])->name('circulation.returns.store');
         Route::post('circulation/renewals', [CirculationController::class, 'renew'])->name('circulation.renewals.store');
+        Route::get('fines', [FineController::class, 'index'])->name('fines.index');
+        Route::post('fines/{fine}/pay', [FineController::class, 'pay'])->name('fines.pay');
+        Route::get('fines/{fine}/receipt', [FineController::class, 'receipt'])->name('fines.receipt');
 
         Route::post('books/{book}/copies', [BookCopyController::class, 'store'])->name('books.copies.store');
         Route::patch('books/{book}/copies/{copy}', [BookCopyController::class, 'update'])->name('books.copies.update');
         Route::delete('books/{book}/copies/{copy}', [BookCopyController::class, 'destroy'])->name('books.copies.destroy');
+    });
+
+Route::middleware(['auth', 'verified', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
     });
 
 Route::middleware('auth')->group(function () {
