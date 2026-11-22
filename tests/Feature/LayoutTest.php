@@ -22,7 +22,7 @@ it('shows admin navigation to administrators and hides restricted entries from m
     $member->assignRole('anggota');
 
     $this->actingAs($member)
-        ->get(route('dashboard'))
+        ->get(route('member.dashboard'))
         ->assertOk()
         ->assertSee('Layanan anggota')
         ->assertDontSee('Pengaturan')
@@ -32,7 +32,7 @@ it('shows admin navigation to administrators and hides restricted entries from m
 it('renders the public layout on the home page', function () {
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Temukan bacaan berikutnya.')
-        ->assertSee('Masuk ke perpustakaan')
+        ->assertSee('Satu buku bisa membuka dunia baru.')
+        ->assertSee('Cari buku')
         ->assertSee('PustakaKu');
 });

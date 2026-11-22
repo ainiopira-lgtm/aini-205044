@@ -7,14 +7,16 @@ use App\Models\BookCopy;
 use App\Models\Fine;
 use App\Models\Loan;
 use App\Models\Member;
-use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CirculationService
 {
-    public function __construct(private readonly LibrarySettingsService $settings) {}
+    public function __construct(
+        private readonly LibrarySettingsService $settings,
+        private readonly ReservationService $reservations,
+    ) {}
 
     public function searchMembers(string $search): Collection
     {
@@ -147,6 +149,7 @@ class CirculationService
             $loans = new Collection;
 
             foreach ($copies as $copy) {
+                $reservation = $this->reservations->readyForCheckout($copy->book_id, $member->id);
                 $loans->push($member->loans()->create([
                     'book_copy_id' => $copy->id,
                     'user_id' => $userId,
@@ -155,6 +158,9 @@ class CirculationService
                     'status' => 'active',
                 ]));
                 $copy->update(['status' => 'borrowed']);
+                if ($reservation) {
+                    $this->reservations->fulfill($reservation);
+                }
             }
 
             return $loans;
@@ -219,6 +225,7 @@ class CirculationService
                 'status' => 'returned',
             ]);
             $copy->update(['status' => 'available']);
+            $this->reservations->promoteAvailableQueue($copy->book_id);
 
             return ['loan' => $loan, 'fine' => $fine, 'days_late' => $daysLate];
         });
@@ -246,31 +253,35 @@ class CirculationService
                 $this->reject('renew_barcode', 'Tidak ada peminjaman aktif untuk eksemplar tersebut.');
             }
 
-            if ($loan->extension_count >= $this->settings->getInt('max_renewals')) {
-                $this->reject('renew_barcode', 'Batas perpanjangan peminjaman telah tercapai.');
+            return $this->renewLockedLoan($loan, $copy, 'renew_barcode');
+        });
+    }
+
+    public function renewMemberLoan(int $memberId, int $loanId): Loan
+    {
+        return DB::transaction(function () use ($memberId, $loanId): Loan {
+            $member = Member::query()->whereKey($memberId)->lockForUpdate()->firstOrFail();
+            if ($member->status !== 'active') {
+                $this->reject('loan', 'Anggota nonaktif tidak dapat memperpanjang peminjaman.');
             }
 
-            if ($loan->status === 'overdue' || $loan->due_date->lt(today())) {
-                $this->reject('renew_barcode', 'Peminjaman yang sudah terlambat tidak dapat diperpanjang.');
+            $loan = Loan::query()
+                ->whereKey($loanId)
+                ->where('member_id', $member->id)
+                ->whereIn('status', ['active', 'overdue'])
+                ->whereNull('return_date')
+                ->lockForUpdate()
+                ->first();
+            if (! $loan) {
+                $this->reject('loan', 'Peminjaman aktif tidak ditemukan untuk akun anggota ini.');
             }
 
-            Book::query()->whereKey($copy->book_id)->lockForUpdate()->firstOrFail();
-            $hasReservation = Reservation::query()
-                ->where('book_id', $copy->book_id)
-                ->where('status', 'pending')
-                ->whereNull('fulfilled_at')
-                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                ->exists();
-            if ($hasReservation) {
-                $this->reject('renew_barcode', 'Buku memiliki reservasi aktif dan tidak dapat diperpanjang.');
+            $copy = BookCopy::query()->whereKey($loan->book_copy_id)->lockForUpdate()->firstOrFail();
+            if ($copy->status !== 'borrowed') {
+                $this->reject('loan', 'Eksemplar tidak sedang dipinjam.');
             }
 
-            $loan->update([
-                'due_date' => $loan->due_date->copy()->addDays($this->settings->getInt('loan_duration_days')),
-                'extension_count' => $loan->extension_count + 1,
-            ]);
-
-            return $loan->refresh();
+            return $this->renewLockedLoan($loan, $copy, 'loan');
         });
     }
 
@@ -302,6 +313,29 @@ class CirculationService
         if ($hasUnpaidFine) {
             $this->reject('member', 'Anggota memiliki denda yang belum lunas.');
         }
+    }
+
+    private function renewLockedLoan(Loan $loan, BookCopy $copy, string $errorField): Loan
+    {
+        if ($loan->extension_count >= $this->settings->getInt('max_renewals')) {
+            $this->reject($errorField, 'Batas perpanjangan peminjaman telah tercapai.');
+        }
+
+        if ($loan->status === 'overdue' || $loan->due_date->lt(today())) {
+            $this->reject($errorField, 'Peminjaman yang sudah terlambat tidak dapat diperpanjang.');
+        }
+
+        Book::query()->whereKey($copy->book_id)->lockForUpdate()->firstOrFail();
+        if ($this->reservations->hasActiveReservations($copy->book_id)) {
+            $this->reject($errorField, 'Buku memiliki reservasi aktif dan tidak dapat diperpanjang.');
+        }
+
+        $loan->update([
+            'due_date' => $loan->due_date->copy()->addDays($this->settings->getInt('loan_duration_days')),
+            'extension_count' => $loan->extension_count + 1,
+        ]);
+
+        return $loan->refresh();
     }
 
     private function reject(string $field, string $message): never

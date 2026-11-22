@@ -20,6 +20,7 @@
             </a>
             <div class="flex items-center gap-3">
                 <a href="{{ route('home') }}" class="hidden rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 sm:inline-flex">Beranda</a>
+                <a href="{{ route('catalog.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">Katalog</a>
                 @auth
                     <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">Dashboard</a>
                 @else
@@ -31,6 +32,14 @@
     </header>
 
     <main class="flex-1">
+        <div class="mx-auto max-w-7xl space-y-3 px-4 pt-4 sm:px-6 lg:px-8">
+            @foreach (['success', 'error', 'warning', 'info'] as $flashType)
+                <x-ui.flash-message :type="$flashType" />
+            @endforeach
+            @if ($errors->any())
+                <x-ui.flash-message type="error" :message="$errors->first()" />
+            @endif
+        </div>
         {{ $slot }}
     </main>
 

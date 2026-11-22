@@ -118,7 +118,7 @@
                 @endcan
 
                 @can('view-member-area')
-                    <a href="{{ route('dashboard') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Layanan anggota' : null">
+                    <a href="{{ route('member.dashboard') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Layanan anggota' : null">
                         <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                             <path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>

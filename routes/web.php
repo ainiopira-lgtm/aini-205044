@@ -5,35 +5,28 @@ use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookCopyController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CirculationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FineController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\MemberPortalController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicCatalogController;
 use App\Http\Controllers\PublisherController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShelfController;
-use App\Models\Book;
-use App\Models\BookCopy;
-use App\Models\Category;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('public.home');
-})->name('home');
+Route::get('/', [PublicCatalogController::class, 'home'])->name('home');
+Route::get('/catalog', [PublicCatalogController::class, 'index'])->name('catalog.index');
+Route::get('/catalog/{book}', [PublicCatalogController::class, 'show'])->name('catalog.show');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/dashboard', function () {
-    $books = Book::query()
-        ->with(['authors', 'category'])
-        ->withCount(['copies as available_copies_count' => fn ($query) => $query->where('status', 'available')])
-        ->orderBy('title')
-        ->paginate(8);
-
-    return view('dashboard', [
-        'books' => $books,
-        'categories' => Category::query()->orderBy('name')->pluck('name', 'id')->all(),
-        'categoryCount' => Category::query()->count(),
-        'copyCount' => BookCopy::query()->count(),
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified', 'role:anggota'])->group(function () {
+    Route::get('/member/dashboard', [MemberPortalController::class, 'index'])->name('member.dashboard');
+    Route::post('/member/loans/{loan}/renew', [MemberPortalController::class, 'renew'])->name('member.loans.renew');
+    Route::post('/catalog/{book}/reservations', [ReservationController::class, 'store'])->name('catalog.reservations.store');
+});
 
 Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
     ->prefix('admin')

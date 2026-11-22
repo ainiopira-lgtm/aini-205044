@@ -294,7 +294,7 @@ it('blocks renewal for late loans, active reservations, and exhausted renewal co
         'extension_count' => 1,
     ]);
     Reservation::factory()->for($expiredBook)->create([
-        'status' => 'pending',
+        'status' => 'expired',
         'expires_at' => now()->subDay(),
     ]);
     $renewed = $service->renewByBarcode($expiredCopy->barcode);
