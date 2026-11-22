@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
             $user->syncRoles($roleName);
         }
 
+        $this->call(CirculationSettingsSeeder::class);
         $this->call(LibrarySeeder::class);
     }
 }
