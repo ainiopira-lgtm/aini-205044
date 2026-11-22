@@ -62,11 +62,27 @@
                 @endcan
 
                 @can('manage-books')
-                    <a href="#" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Katalog buku' : null">
+                    <a href="{{ route('admin.books.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Katalog buku' : null">
                         <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Zm0 0V21m4-14h8m-8 4h8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         <span x-show="!collapsed">Katalog buku</span>
+                    </a>
+                    <a href="{{ route('admin.categories.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Kategori' : null">
+                        <span class="grid size-5 shrink-0 place-items-center text-[10px] font-bold text-gray-400">K</span>
+                        <span x-show="!collapsed">Kategori</span>
+                    </a>
+                    <a href="{{ route('admin.authors.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Penulis' : null">
+                        <span class="grid size-5 shrink-0 place-items-center text-[10px] font-bold text-gray-400">P</span>
+                        <span x-show="!collapsed">Penulis</span>
+                    </a>
+                    <a href="{{ route('admin.publishers.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Penerbit' : null">
+                        <span class="grid size-5 shrink-0 place-items-center text-[10px] font-bold text-gray-400">T</span>
+                        <span x-show="!collapsed">Penerbit</span>
+                    </a>
+                    <a href="{{ route('admin.shelves.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Rak' : null">
+                        <span class="grid size-5 shrink-0 place-items-center text-[10px] font-bold text-gray-400">R</span>
+                        <span x-show="!collapsed">Rak</span>
                     </a>
                 @endcan
 

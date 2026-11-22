@@ -20,6 +20,7 @@ php artisan key:generate
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS pustakaku CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 npm.cmd install
 php artisan migrate --seed
+php artisan storage:link
 npm.cmd run build
 php artisan test
 ```

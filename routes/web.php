@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookCopyController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PublisherController;
+use App\Http\Controllers\ShelfController;
 use App\Models\Book;
 use App\Models\Category;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +29,21 @@ Route::get('/dashboard', function () {
         'copyCount' => \App\Models\BookCopy::query()->count(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('categories', CategoryController::class);
+        Route::resource('authors', AuthorController::class);
+        Route::resource('publishers', PublisherController::class);
+        Route::resource('shelves', ShelfController::class);
+        Route::resource('books', BookController::class);
+
+        Route::post('books/{book}/copies', [BookCopyController::class, 'store'])->name('books.copies.store');
+        Route::patch('books/{book}/copies/{copy}', [BookCopyController::class, 'update'])->name('books.copies.update');
+        Route::delete('books/{book}/copies/{copy}', [BookCopyController::class, 'destroy'])->name('books.copies.destroy');
+    });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
