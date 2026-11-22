@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookCopyController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CirculationController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublisherController;
@@ -43,6 +44,14 @@ Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
         Route::resource('books', BookController::class);
         Route::get('members/{member}/card', [MemberController::class, 'card'])->name('members.card');
         Route::resource('members', MemberController::class);
+        Route::get('circulation', [CirculationController::class, 'index'])->name('circulation.index');
+        Route::post('circulation/members', [CirculationController::class, 'selectMember'])->name('circulation.members.select');
+        Route::post('circulation/copies', [CirculationController::class, 'addCopy'])->name('circulation.copies.add');
+        Route::delete('circulation/copies', [CirculationController::class, 'removeCopy'])->name('circulation.copies.remove');
+        Route::delete('circulation/draft', [CirculationController::class, 'clearDraft'])->name('circulation.draft.clear');
+        Route::post('circulation/loans', [CirculationController::class, 'checkout'])->name('circulation.loans.store');
+        Route::post('circulation/returns', [CirculationController::class, 'returnCopy'])->name('circulation.returns.store');
+        Route::post('circulation/renewals', [CirculationController::class, 'renew'])->name('circulation.renewals.store');
 
         Route::post('books/{book}/copies', [BookCopyController::class, 'store'])->name('books.copies.store');
         Route::patch('books/{book}/copies/{copy}', [BookCopyController::class, 'update'])->name('books.copies.update');

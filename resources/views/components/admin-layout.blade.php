@@ -87,7 +87,7 @@
                 @endcan
 
                 @can('manage-circulation')
-                    <a href="#" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Sirkulasi' : null">
+                    <a href="{{ route('admin.circulation.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Sirkulasi' : null">
                         <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                             <path d="M5 7h14m-3-3 3 3-3 3M19 17H5m3 3-3-3 3-3" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>

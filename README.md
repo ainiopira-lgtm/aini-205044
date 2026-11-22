@@ -32,6 +32,8 @@ It also seeds example catalog data: 50 books, three copies per book, and their c
 
 Administrators and librarians can manage members from the admin navigation. Member records receive annual `AGT-YYYY-0001` numbers and a linked `anggota` account automatically; the member detail page includes loan history, accumulated fines, and a printable PDF card with a QR code. Member photos are stored on Laravel's public disk, so run `php artisan storage:link` during setup.
 
+Administrators and librarians can process circulation in the **Sirkulasi** page. Its business rules are read from the `settings` table: `loan_duration_days`, `max_active_loans`, `fine_per_day`, and `max_renewals` (initial values: 7 days, 3 books, Rp1,000 per late day, and 1 renewal).
+
 | Role | Email |
 | --- | --- |
 | admin | admin@pustakaku.test |
