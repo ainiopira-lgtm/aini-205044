@@ -1,5 +1,6 @@
 <?php
 
+use App\Exports\ReportExport;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Fine;
@@ -15,6 +16,22 @@ beforeEach(function () {
 
 afterEach(function () {
     $this->travelBack();
+});
+
+it('exports formula-leading strings as literal text in Excel reports', function () {
+    $export = new ReportExport(['Nilai'], [
+        ['=HYPERLINK("https://example.test","open")'],
+        ["\t+1+1"],
+        ['@SUM(A1:A2)'],
+        [1200],
+    ]);
+
+    expect($export->array())->toBe([
+        ["'=HYPERLINK(\"https://example.test\",\"open\")"],
+        ["'\t+1+1"],
+        ["'@SUM(A1:A2)"],
+        [1200],
+    ]);
 });
 
 it('shows admin dashboard statistics, popular books, chart data, and loans due today', function () {

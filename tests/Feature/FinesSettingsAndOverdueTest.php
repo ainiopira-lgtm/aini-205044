@@ -167,5 +167,6 @@ it('marks only active loans past due as overdue and registers the daily schedule
 
     $this->artisan('schedule:list')
         ->expectsOutputToContain('loans:mark-overdue')
+        ->expectsOutputToContain('loans:send-due-reminders')
         ->assertExitCode(0);
 });

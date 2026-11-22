@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\ReservationReadyMail;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Loan;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Services\CirculationService;
 use App\Services\ReservationService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
@@ -36,6 +38,7 @@ function expectReservationFailure(callable $operation): ValidationException
 
 beforeEach(function () {
     $this->travelTo(Carbon::parse('2026-11-22 12:00:00'));
+    Mail::fake();
 });
 
 afterEach(function () {
@@ -83,6 +86,7 @@ it('promotes reservations in FIFO order and expires ready holds after two days',
     expect($first->fresh()->status)->toBe('ready')
         ->and($first->fresh()->expires_at->toDateTimeString())->toBe('2026-11-24 12:00:01')
         ->and($second->fresh()->status)->toBe('ready');
+    Mail::assertQueued(ReservationReadyMail::class, 2);
 
     $bookWithQueue = Book::factory()->create();
     $availableCopy = BookCopy::factory()->for($bookWithQueue)->create(['status' => 'available']);

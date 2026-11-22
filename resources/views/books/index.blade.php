@@ -16,7 +16,8 @@
             </div>
         </form>
 
-        <div class="mb-4 flex justify-end">
+        <div class="mb-4 flex flex-wrap justify-end gap-2">
+            <x-ui.button href="{{ route('admin.books.import.create') }}" variant="secondary">Impor Excel/CSV</x-ui.button>
             <x-ui.button href="{{ route('admin.books.create') }}">Tambah buku</x-ui.button>
         </div>
 

@@ -13,14 +13,17 @@ class MarkOverdueLoans extends Command
 
     public function handle(): int
     {
-        $count = Loan::query()
+        $count = 0;
+        Loan::query()
             ->where('status', 'active')
             ->whereNull('return_date')
             ->where('due_date', '<', today()->toDateString())
-            ->update([
-                'status' => 'overdue',
-                'updated_at' => now(),
-            ]);
+            ->chunkById(100, function ($loans) use (&$count): void {
+                foreach ($loans as $loan) {
+                    $loan->update(['status' => 'overdue']);
+                    $count++;
+                }
+            });
 
         $this->info("{$count} loan ditandai terlambat.");
 

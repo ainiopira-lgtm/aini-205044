@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -29,6 +30,24 @@ test('users can not authenticate with invalid password', function () {
     ]);
 
     $this->assertGuest();
+});
+
+test('login is rate limited after five failed attempts', function () {
+    RateLimiter::clear('person@example.test|127.0.0.1');
+
+    for ($attempt = 0; $attempt < 5; $attempt++) {
+        $this->post('/login', [
+            'email' => 'person@example.test',
+            'password' => 'wrong-password',
+        ])->assertSessionHasErrors('email');
+    }
+
+    $this->post('/login', [
+        'email' => 'person@example.test',
+        'password' => 'wrong-password',
+    ])->assertSessionHasErrors('email');
+
+    expect(RateLimiter::tooManyAttempts('person@example.test|127.0.0.1', 5))->toBeTrue();
 });
 
 test('users can logout', function () {

@@ -107,6 +107,11 @@ it('creates and updates books, manages cover files, authors, and copies', functi
 
     $this->put(route('admin.books.update', $book), $updatedData)
         ->assertRedirect(route('admin.books.show', $book));
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => Book::class,
+        'subject_id' => $book->id,
+        'action' => 'book.authors_updated',
+    ]);
 
     $book->refresh();
     expect($book->title)->toBe('Bumi Manusia (Edisi Baru)')
@@ -160,16 +165,16 @@ it('rejects invalid cover files and prevents members from managing the catalog',
     ])->assertForbidden();
 
     $validData = [
-            'title' => 'Buku Dengan Sampul Salah',
-            'category_id' => $category->id,
-            'publisher_id' => $publisher->id,
-            'shelf_id' => $shelf->id,
-            'year' => 2020,
-            'synopsis' => 'Sinopsis',
-            'price' => 10000,
-            'authors' => [$author->id],
-            'cover' => UploadedFile::fake()->create('dokumen.txt', 20, 'text/plain'),
-        ];
+        'title' => 'Buku Dengan Sampul Salah',
+        'category_id' => $category->id,
+        'publisher_id' => $publisher->id,
+        'shelf_id' => $shelf->id,
+        'year' => 2020,
+        'synopsis' => 'Sinopsis',
+        'price' => 10000,
+        'authors' => [$author->id],
+        'cover' => UploadedFile::fake()->create('dokumen.txt', 20, 'text/plain'),
+    ];
 
     $this->actingAs(catalogStaff('admin'))
         ->from(route('admin.books.create'))

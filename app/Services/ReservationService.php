@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\ReservationReadyMail;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Member;
 use App\Models\Reservation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ReservationService
@@ -61,7 +63,12 @@ class ReservationService
             ->where('status', 'ready')
             ->whereNotNull('expires_at')
             ->where('expires_at', '<=', $now)
-            ->update(['status' => 'expired']);
+            ->orderBy('id')
+            ->chunkById(100, function ($reservations): void {
+                foreach ($reservations as $reservation) {
+                    $reservation->update(['status' => 'expired']);
+                }
+            });
 
         $availableCopies = BookCopy::query()
             ->where('book_id', $bookId)
@@ -74,25 +81,34 @@ class ReservationService
             ->where('expires_at', '>', $now)
             ->count();
 
-        while ($readyCount < $availableCopies) {
-            $next = Reservation::query()
-                ->where('book_id', $bookId)
-                ->where('status', 'pending')
-                ->whereNull('fulfilled_at')
-                ->orderBy('reserved_at')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->first();
+        $reservationsToPromote = Reservation::query()
+            ->with([
+                'member:id,name,email',
+                'book:id,title',
+            ])
+            ->where('book_id', $bookId)
+            ->where('status', 'pending')
+            ->whereNull('fulfilled_at')
+            ->orderBy('reserved_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->limit(max(0, $availableCopies - $readyCount))
+            ->get();
 
-            if (! $next) {
-                break;
-            }
-
-            $next->update([
+        foreach ($reservationsToPromote as $reservation) {
+            $expiresAt = $now->copy()->addDays(2);
+            $reservation->update([
                 'status' => 'ready',
-                'expires_at' => $now->copy()->addDays(2),
+                'expires_at' => $expiresAt,
             ]);
-            $readyCount++;
+
+            if (filled($reservation->member->email)) {
+                Mail::to($reservation->member->email)->queue(new ReservationReadyMail(
+                    $reservation->member->name,
+                    $reservation->book->title,
+                    $expiresAt->format('d/m/Y H:i'),
+                ));
+            }
         }
     }
 

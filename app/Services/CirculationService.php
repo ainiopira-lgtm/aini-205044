@@ -332,6 +332,7 @@ class CirculationService
 
         $loan->update([
             'due_date' => $loan->due_date->copy()->addDays($this->settings->getInt('loan_duration_days')),
+            'reminder_sent_at' => null,
             'extension_count' => $loan->extension_count + 1,
         ]);
 

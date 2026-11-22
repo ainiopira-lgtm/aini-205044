@@ -2,12 +2,18 @@
 
 namespace App\Providers;
 
-use App\Models\User;
 use App\Models\Author;
 use App\Models\Book;
+use App\Models\BookCopy;
 use App\Models\Category;
+use App\Models\Fine;
+use App\Models\Loan;
+use App\Models\Member;
 use App\Models\Publisher;
+use App\Models\Reservation;
 use App\Models\Shelf;
+use App\Models\User;
+use App\Observers\AuditObserver;
 use App\Policies\AuthorPolicy;
 use App\Policies\BookPolicy;
 use App\Policies\CategoryPolicy;
@@ -36,6 +42,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Publisher::class, PublisherPolicy::class);
         Gate::policy(Shelf::class, ShelfPolicy::class);
         Gate::policy(Book::class, BookPolicy::class);
+
+        Book::observe(AuditObserver::class);
+        Member::observe(AuditObserver::class);
+        Loan::observe(AuditObserver::class);
+        BookCopy::observe(AuditObserver::class);
+        Fine::observe(AuditObserver::class);
+        Reservation::observe(AuditObserver::class);
 
         Gate::define('view-admin-dashboard', fn (User $user): bool => $user->hasAnyRole(['admin', 'pustakawan']));
         Gate::define('manage-books', fn (User $user): bool => $user->hasAnyRole(['admin', 'pustakawan']));

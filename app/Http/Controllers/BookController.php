@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookRequest;
 use App\Http\Requests\UpdateBookRequest;
+use App\Models\ActivityLog;
 use App\Models\Author;
 use App\Models\Book;
 use App\Models\Category;
@@ -12,10 +13,10 @@ use App\Models\Shelf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Http\UploadedFile;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -97,15 +98,32 @@ class BookController extends Controller
         $newCover = isset($validated['cover']) ? $this->storeCover($validated['cover']) : null;
         $previousCover = $book->cover;
         $authorIds = $validated['authors'];
+        $previousAuthorIds = $book->authors()->orderBy('authors.id')->pluck('authors.id')->map(fn ($id): int => (int) $id)->all();
+        $newAuthorIds = array_map('intval', $authorIds);
+        $authorsChanged = $previousAuthorIds !== collect($newAuthorIds)->sort()->values()->all();
         $attributes = collect($validated)->except(['cover', 'authors'])->all();
 
         if ($newCover !== null) {
             $attributes['cover'] = $newCover;
         }
 
-        DB::transaction(function () use ($book, $attributes, $authorIds) {
+        DB::transaction(function () use ($book, $attributes, $newAuthorIds, $previousAuthorIds, $authorsChanged) {
             $book->update($attributes);
-            $book->authors()->sync($authorIds);
+            $book->authors()->sync($newAuthorIds);
+
+            if ($authorsChanged) {
+                ActivityLog::query()->create([
+                    'user_id' => Auth::id(),
+                    'subject_type' => $book->getMorphClass(),
+                    'subject_id' => $book->getKey(),
+                    'action' => 'book.authors_updated',
+                    'description' => 'Book authors updated',
+                    'properties' => [
+                        'previous_author_ids' => $previousAuthorIds,
+                        'new_author_ids' => collect($newAuthorIds)->sort()->values()->all(),
+                    ],
+                ]);
+            }
         });
 
         if ($newCover !== null) {

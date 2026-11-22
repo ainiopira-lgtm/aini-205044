@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookCopyController;
+use App\Http\Controllers\BookImportController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CirculationController;
 use App\Http\Controllers\DashboardController;
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
         Route::resource('authors', AuthorController::class);
         Route::resource('publishers', PublisherController::class);
         Route::resource('shelves', ShelfController::class);
+        Route::get('books/import', [BookImportController::class, 'create'])->name('books.import.create');
+        Route::post('books/import', [BookImportController::class, 'store'])->name('books.import.store');
         Route::resource('books', BookController::class);
         Route::get('members/{member}/card', [MemberController::class, 'card'])->name('members.card');
         Route::resource('members', MemberController::class);

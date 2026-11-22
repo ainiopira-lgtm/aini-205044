@@ -20,6 +20,7 @@ class Loan extends Model
         'loan_date',
         'due_date',
         'return_date',
+        'reminder_sent_at',
         'extension_count',
         'status',
     ];
@@ -30,6 +31,7 @@ class Loan extends Model
             'loan_date' => 'date',
             'due_date' => 'date',
             'return_date' => 'date',
+            'reminder_sent_at' => 'datetime',
             'extension_count' => 'integer',
         ];
     }
