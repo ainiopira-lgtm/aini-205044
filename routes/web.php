@@ -12,6 +12,7 @@ use App\Http\Controllers\MemberPortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCatalogController;
 use App\Http\Controllers\PublisherController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShelfController;
@@ -47,6 +48,10 @@ Route::middleware(['auth', 'verified', 'role:admin|pustakawan'])
         Route::post('circulation/loans', [CirculationController::class, 'checkout'])->name('circulation.loans.store');
         Route::post('circulation/returns', [CirculationController::class, 'returnCopy'])->name('circulation.returns.store');
         Route::post('circulation/renewals', [CirculationController::class, 'renew'])->name('circulation.renewals.store');
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export/{format}', [ReportController::class, 'export'])
+            ->whereIn('format', ['pdf', 'xlsx'])
+            ->name('reports.export');
         Route::get('fines', [FineController::class, 'index'])->name('fines.index');
         Route::post('fines/{fine}/pay', [FineController::class, 'pay'])->name('fines.pay');
         Route::get('fines/{fine}/receipt', [FineController::class, 'receipt'])->name('fines.receipt');

@@ -6,86 +6,74 @@
         </div>
     </x-slot>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <x-ui.card>
-            <p class="text-sm font-medium text-gray-500">Judul buku</p>
-            <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900">{{ number_format($books->total()) }}</p>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        @foreach ([
+            ['label' => 'Total buku', 'value' => number_format($totalBooks), 'color' => 'text-indigo-600'],
+            ['label' => 'Anggota aktif', 'value' => number_format($activeMembers), 'color' => 'text-emerald-600'],
+            ['label' => 'Sedang dipinjam', 'value' => number_format($currentLoans), 'color' => 'text-sky-600'],
+            ['label' => 'Terlambat', 'value' => number_format($overdueLoans), 'color' => 'text-rose-600'],
+            ['label' => 'Denda bulan ini', 'value' => 'Rp '.number_format($finesThisMonth, 0, ',', '.'), 'color' => 'text-amber-600'],
+        ] as $stat)
+            <x-ui.card>
+                <p class="text-sm font-medium text-gray-500">{{ $stat['label'] }}</p>
+                <p class="mt-2 text-2xl font-bold tracking-tight {{ $stat['color'] }}">{{ $stat['value'] }}</p>
+            </x-ui.card>
+        @endforeach
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[2fr_1fr]">
+        <x-ui.card title="Peminjaman 30 hari terakhir" description="Jumlah transaksi peminjaman per hari.">
+            <div class="h-72">
+                <canvas
+                    id="loans-chart"
+                    data-labels='@json($loanChartLabels)'
+                    data-values='@json($loanChartValues)'
+                    role="img"
+                    aria-label="Grafik jumlah peminjaman selama 30 hari terakhir"
+                ></canvas>
+            </div>
         </x-ui.card>
-        <x-ui.card>
-            <p class="text-sm font-medium text-gray-500">Kategori</p>
-            <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900">{{ number_format($categoryCount) }}</p>
-        </x-ui.card>
-        <x-ui.card>
-            <p class="text-sm font-medium text-gray-500">Eksemplar</p>
-            <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900">{{ number_format($copyCount) }}</p>
-        </x-ui.card>
-        <x-ui.card>
-            <p class="text-sm font-medium text-gray-500">Status katalog</p>
-            <div class="mt-3"><x-ui.status-badge status="available" label="Aktif" /></div>
+
+        <x-ui.card title="Buku terpopuler" description="Peminjaman terbanyak dalam 30 hari terakhir.">
+            <ol class="divide-y divide-gray-100">
+                @forelse ($popularBooks as $book)
+                    <li class="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                        <span class="font-medium text-gray-800">{{ $book->title }}</span>
+                        <span class="shrink-0 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                            {{ number_format($book->loan_count) }} pinjam
+                        </span>
+                    </li>
+                @empty
+                    <li class="py-3 text-sm text-gray-500">Belum ada data peminjaman dalam 30 hari terakhir.</li>
+                @endforelse
+            </ol>
         </x-ui.card>
     </div>
 
-    <x-ui.flash-message type="info" message="Contoh pesan flash. Pesan sesi success, error, warning, dan info juga ditampilkan otomatis." />
-
-    <x-ui.card title="Komponen form" description="Contoh input, select, dan tombol dengan gaya yang konsisten.">
-        <form class="grid gap-4 md:grid-cols-[1fr_1fr_auto]" @submit.prevent>
-            <x-ui.input name="sample_title" label="Judul buku" placeholder="Cari judul buku" />
-            <x-ui.select
-                name="sample_category"
-                label="Kategori"
-                :options="$categories"
-                placeholder="Semua kategori"
-            />
-            <div class="flex items-end gap-2">
-                <x-ui.button type="submit">Terapkan</x-ui.button>
-                <x-ui.button variant="secondary" type="reset">Reset</x-ui.button>
-            </div>
-        </form>
-    </x-ui.card>
-
-    <x-ui.card title="Koleksi terbaru" description="Contoh tabel, badge status, dan pagination.">
+    <x-ui.card title="Jatuh tempo hari ini" description="Pinjaman yang belum dikembalikan dan jatuh tempo pada hari ini.">
         <x-ui.table>
             <x-slot:head>
                 <tr>
-                    <th scope="col" class="px-5 py-3">Judul</th>
-                    <th scope="col" class="px-5 py-3">Penulis</th>
-                    <th scope="col" class="px-5 py-3">Kategori</th>
-                    <th scope="col" class="px-5 py-3">Eksemplar tersedia</th>
-                    <th scope="col" class="px-5 py-3">Status</th>
+                    <th scope="col" class="px-5 py-3">Anggota</th>
+                    <th scope="col" class="px-5 py-3">No. anggota</th>
+                    <th scope="col" class="px-5 py-3">Buku</th>
+                    <th scope="col" class="px-5 py-3">Barcode</th>
+                    <th scope="col" class="px-5 py-3">Jatuh tempo</th>
                 </tr>
             </x-slot:head>
-            @forelse ($books as $book)
+            @forelse ($dueTodayLoans as $loan)
                 <tr>
-                    <td class="whitespace-nowrap px-5 py-3.5 font-medium text-gray-900">{{ $book->title }}</td>
-                    <td class="px-5 py-3.5">{{ $book->authors->pluck('name')->join(', ') ?: '—' }}</td>
-                    <td class="px-5 py-3.5">{{ $book->category->name }}</td>
-                    <td class="px-5 py-3.5">{{ $book->available_copies_count }}</td>
-                    <td class="px-5 py-3.5">
-                        <x-ui.status-badge
-                            :status="$book->available_copies_count > 0 ? 'available' : 'borrowed'"
-                            :label="$book->available_copies_count > 0 ? 'Tersedia' : 'Tidak tersedia'"
-                        />
-                    </td>
+                    <td class="whitespace-nowrap px-5 py-3.5 font-medium text-gray-900">{{ $loan->member->name }}</td>
+                    <td class="whitespace-nowrap px-5 py-3.5">{{ $loan->member->membership_number }}</td>
+                    <td class="px-5 py-3.5">{{ $loan->bookCopy->book->title }}</td>
+                    <td class="whitespace-nowrap px-5 py-3.5">{{ $loan->bookCopy->barcode }}</td>
+                    <td class="whitespace-nowrap px-5 py-3.5">{{ $loan->due_date->format('d/m/Y') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="px-5 py-10 text-center text-gray-500">Belum ada data buku. Jalankan seeder untuk memuat contoh katalog.</td>
+                    <td colspan="5" class="px-5 py-10 text-center text-gray-500">Tidak ada pinjaman yang jatuh tempo hari ini.</td>
                 </tr>
             @endforelse
         </x-ui.table>
-        <x-ui.pagination :paginator="$books" />
-    </x-ui.card>
-
-    <x-ui.card title="Modal konfirmasi" description="Contoh dialog konfirmasi untuk tindakan yang berisiko.">
-        <x-ui.confirmation-modal
-            name="sample-delete"
-            title="Hapus buku?"
-            message="Tindakan ini tidak dapat dibatalkan. Ini hanya contoh dialog."
-            confirm-text="Ya, hapus"
-        >
-            <x-slot:trigger>
-                <x-ui.button variant="danger">Hapus buku</x-ui.button>
-            </x-slot:trigger>
-        </x-ui.confirmation-modal>
     </x-ui.card>
 </x-admin-layout>

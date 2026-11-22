@@ -15,7 +15,8 @@ it('shows admin navigation to administrators and hides restricted entries from m
         ->assertOk()
         ->assertSee('Katalog buku')
         ->assertSee('Pengaturan')
-        ->assertSee('Koleksi terbaru')
+        ->assertSee('Total buku')
+        ->assertSee('Peminjaman 30 hari terakhir')
         ->assertSee('PustakaKu');
 
     $member = User::factory()->create();

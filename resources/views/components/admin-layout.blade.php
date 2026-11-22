@@ -93,6 +93,12 @@
                         </svg>
                         <span x-show="!collapsed">Sirkulasi</span>
                     </a>
+                    <a href="{{ route('admin.reports.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Laporan' : null">
+                        <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8m-8 4h8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span x-show="!collapsed">Laporan</span>
+                    </a>
                     <a href="{{ route('admin.fines.index') }}" @click="sidebarOpen = false" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :title="collapsed ? 'Denda' : null">
                         <span class="grid size-5 shrink-0 place-items-center text-[10px] font-bold text-gray-400">D</span>
                         <span x-show="!collapsed">Denda</span>
